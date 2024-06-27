@@ -11,7 +11,7 @@ class OpenRCT2Env(gym.Env):
         self.track_builder = TrackBuilder(self.ui_controller)
         
         # Define action and observation space
-        self.action_space = gym.spaces.Discrete(5)
+        self.action_space = gym.spaces.Discrete(16)
         self.observation_space = gym.spaces.Box(
             low=np.array([0, 0, 0, 0]),
             high=np.array([1000, 1000, 100, 3]),
@@ -28,6 +28,8 @@ class OpenRCT2Env(gym.Env):
 
     def step(self, action):
         success = self.track_builder.take_action(action)
+        if success:
+            print(f"Track piece placed, increase reward")
         observation = self._get_observation()
         reward = self._calculate_reward(success)
         terminated = self._is_done()
@@ -52,7 +54,7 @@ class OpenRCT2Env(gym.Env):
         if success:
             return 1
         else:
-            return -1
+            return -0.5
 
     def _is_done(self):
         return (self.steps >= self.max_steps or 
