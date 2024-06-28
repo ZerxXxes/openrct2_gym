@@ -61,8 +61,8 @@ class UIController:
             return False
 
     def _is_button_clickable(self, coords):
-        # Define a small region around the button to check
-        region_size = 5
+        # Define a small region around the button to check, larger area if we check the build button
+        region_size = 25 if coords == self.build_coords else 5
         x, y = coords
         bbox = (x - region_size, y - region_size, x + region_size, y + region_size)
         
@@ -71,6 +71,7 @@ class UIController:
         
         if coords == self.build_coords:
             # Check if the entire button region matches the background color
+            region_size = 25
             color_match = np.all(np.abs(button_region - self.build_button_bg) < self.color_threshold, axis=2)
             return not np.all(color_match)  # If all pixels match, button is not clickable (loop completed)
         else:

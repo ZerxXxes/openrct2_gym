@@ -39,13 +39,21 @@ class OpenRCT2Env(gym.Env):
         })
 
     def step(self, action):
-        success = self.track_builder.take_action(action)
+        success, new_position, new_direction = self.track_builder.take_action(action, self.current_position, self.current_direction)
         if success:
-            print(f"Track piece placed, increase reward")
-            self.track_length += 1
-            self.track_pieces.append(action)
+            if action == 16:  # Remove piece
+                print(f"Track piece removed, current position: {self.current_position} current direction: {self.current_direction}")
+                if self.track_pieces:
+                    self.track_pieces.pop()
+                    self.track_length -= 1
+            else:
+                print(f"Track piece placed, current position: {self.current_position} current direction: {self.current_direction}")
+                self.track_length += 1
+                self.track_pieces.append(action)
+
             self.last_piece_type = action
-            self.update_current_state(action)
+            self.current_position = new_position
+            self.current_direction = new_direction
 
         observation = self._get_observation()
         reward = self._calculate_reward(success)
@@ -84,6 +92,7 @@ class OpenRCT2Env(gym.Env):
         self.loop_completed = False
         self.chain_lift_used = False
         self.last_piece_type = 0
+        self.track_builder.history.clear()  # Clear the history when resetting the environment
 
         # Build inital station
         self.ui_controller.start_new_rollercoaster()
