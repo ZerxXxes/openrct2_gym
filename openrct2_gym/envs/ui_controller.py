@@ -107,7 +107,7 @@ class UIController:
         print(f"Trying to place: {piece_type}")
         def safe_click(coords):
             if not self._is_button_clickable(coords):
-                print(f"Button at {coords} is not clickable, decrease reward")
+                print(f"Piece {piece_type} not possible to place here, decrease reward")
                 return False
             self.click(coords)
             return True

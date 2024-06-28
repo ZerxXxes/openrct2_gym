@@ -12,47 +12,86 @@ class OpenRCT2Env(gym.Env):
         
         # Define action and observation space
         self.action_space = gym.spaces.Discrete(17)
-        self.observation_space = gym.spaces.Box(
-            low=np.array([0, 0, 0, 0]),
-            high=np.array([1000, 1000, 100, 3]),
-            dtype=np.float32
-        )
 
         # Initialize state variables
-        self.current_position = [500, 500, 0]
+        self.current_position = None
+        self.goal_position = None
         self.current_direction = 0
+        self.track_pieces = []
         self.track_length = 0
         self.max_track_length = 30
-        self.max_steps = 30
+        self.max_steps = 50
+        self.station_length = self.ui_controller.station_length
         self.steps = 0
         self.loop_completed = False
+        self.chain_lift_used = False
+        self.last_piece_type = 0
+
+        # Define observation space
+        self.observation_space = gym.spaces.Dict({
+            'track_pieces': gym.spaces.Box(low=0, high=16, shape=(self.max_track_length,), dtype=np.int32),
+            'current_height': gym.spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32),
+            'current_direction': gym.spaces.Discrete(4),
+            'distance_to_start': gym.spaces.Box(low=0, high=np.sqrt(2000**2 + 2000**2), shape=(1,), dtype=np.float32),
+            'track_length': gym.spaces.Discrete(self.max_track_length + 1),
+            'last_piece_type': gym.spaces.Discrete(17),
+            'chain_lift_used': gym.spaces.Discrete(2),
+        })
 
     def step(self, action):
         success = self.track_builder.take_action(action)
         if success:
             print(f"Track piece placed, increase reward")
+            self.track_length += 1
+            self.track_pieces.append(action)
+            self.last_piece_type = action
+            self.update_current_state(action)
+
         observation = self._get_observation()
         reward = self._calculate_reward(success)
 
         # Check for loop completion
         self.loop_completed = self.ui_controller.is_loop_completed()
+        if self.loop_completed:
+            print(f"Loop has been completed, great success!")
         terminated = self.loop_completed
         
         # Check if episode was truncated
         truncated = self._is_trunkated()
         self.steps += 1
         info = {}
+
+        if terminated:
+            ride_rating = self.evaluate_ride()
+            info['ride_rating'] = ride_rating
+
         return observation, reward, terminated, truncated, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.ui_controller.demolish_rollercoaster()
+
+        # Set initial position (north end of the station)
         self.current_position = [500, 500, 0]
+
+        # Set goal position (south end of the station)
+        self.goal_position = [500, 500 + self.station_length, 0]
+
         self.current_direction = 0
+        self.track_pieces = []
         self.track_length = 0
         self.steps = 0
         self.loop_completed = False
+        self.chain_lift_used = False
+        self.last_piece_type = 0
+
+        # Build inital station
         self.ui_controller.start_new_rollercoaster()
+
+        # Update our state to reflect the built station
+        self.track_length = self.station_length
+        self.track_pieces = [0] * self.station_length  # Assuming 0 is the action for a straight piece
+
         observation = self._get_observation()
         info = {}
         return observation, info
@@ -70,13 +109,31 @@ class OpenRCT2Env(gym.Env):
                 self.track_length >= self.max_track_length)
 
     def _get_observation(self):
-        return np.array([
-            self.current_position[0],
-            self.current_position[1],
-            self.current_position[2],
-            self.current_direction
-        ], dtype=np.float32)
+        return {
+            'track_pieces': np.array(self.track_pieces + [0] * (self.max_track_length - len(self.track_pieces)), dtype=np.int32),
+            'current_height': np.array([self.current_position[2]], dtype=np.int32),
+            'current_direction': self.current_direction,
+            'distance_to_start': np.array([np.sqrt((self.current_position[0] - self.goal_position[0])**2 + 
+                                                   (self.current_position[1] - self.goal_position[1])**2)], dtype=np.float32),
+            'track_length': self.track_length,
+            'last_piece_type': self.last_piece_type,
+            'chain_lift_used': int(self.chain_lift_used),
+        }
 
+    def update_current_state(self, action):
+        # Update current position, direction, and other state variables based on the action
+        # This is a placeholder and should be implemented based on how each action affects the state
+        pass
+
+    def evaluate_ride(self):
+        # Placeholder for ride evaluation function
+        # This should start the ride, run a lap, and return the ride rating
+        # For now, we'll return a random rating
+        return {
+            'excitement': np.random.randint(0, 100),
+            'intensity': np.random.randint(0, 100),
+            'nausea': np.random.randint(0, 100)
+        }
     def close(self):
         pass
 
