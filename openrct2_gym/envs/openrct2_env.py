@@ -11,7 +11,7 @@ class OpenRCT2Env(gym.Env):
         self.track_builder = TrackBuilder(self.ui_controller)
         
         # Define action and observation space
-        self.action_space = gym.spaces.Discrete(16)
+        self.action_space = gym.spaces.Discrete(17)
         self.observation_space = gym.spaces.Box(
             low=np.array([0, 0, 0, 0]),
             high=np.array([1000, 1000, 100, 3]),
@@ -25,6 +25,7 @@ class OpenRCT2Env(gym.Env):
         self.max_track_length = 30
         self.max_steps = 30
         self.steps = 0
+        self.loop_completed = False
 
     def step(self, action):
         success = self.track_builder.take_action(action)
@@ -32,8 +33,13 @@ class OpenRCT2Env(gym.Env):
             print(f"Track piece placed, increase reward")
         observation = self._get_observation()
         reward = self._calculate_reward(success)
-        terminated = self._is_done()
-        truncated = False
+
+        # Check for loop completion
+        self.loop_completed = self.ui_controller.is_loop_completed()
+        terminated = self.loop_completed
+        
+        # Check if episode was truncated
+        truncated = self._is_trunkated()
         self.steps += 1
         info = {}
         return observation, reward, terminated, truncated, info
@@ -45,18 +51,21 @@ class OpenRCT2Env(gym.Env):
         self.current_direction = 0
         self.track_length = 0
         self.steps = 0
+        self.loop_completed = False
         self.ui_controller.start_new_rollercoaster()
         observation = self._get_observation()
         info = {}
         return observation, info
 
     def _calculate_reward(self, success):
-        if success:
+        if self.loop_completed:
+            return 100  # Big reward for completing the loop
+        elif success:
             return 1
         else:
             return -0.5
 
-    def _is_done(self):
+    def _is_trunkated(self):
         return (self.steps >= self.max_steps or 
                 self.track_length >= self.max_track_length)
 

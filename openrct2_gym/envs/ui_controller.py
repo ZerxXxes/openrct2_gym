@@ -18,6 +18,7 @@ class UIController:
         self.exit_builder_coords = (269, 106)
         self.demolish_ride_coords = (1026, 257)
         self.confirm_demolish_coords = (502, 399)
+        self.remove_piece_coords = (170, 445)
         
         # Track pieces
         ## Direction
@@ -69,15 +70,16 @@ class UIController:
         button_region = np.array(ImageGrab.grab(bbox=bbox))
         
         if coords == self.build_coords:
-            # For the Build-button we check if if the button is only background color, this means we have completed a loop
+            # Check if the entire button region matches the background color
             color_match = np.all(np.abs(button_region - self.build_button_bg) < self.color_threshold, axis=2)
-            return True
+            return not np.all(color_match)  # If all pixels match, button is not clickable (loop completed)
         else:
-            # Check if the faded color is present in the region
+            # Original check for other buttons
             color_match = np.all(np.abs(button_region - self.faded_color) < self.color_threshold, axis=2)
-        
-        # If any pixel matches the faded color, the button is not clickable
-        return not np.any(color_match)
+            return not np.any(color_match)
+
+    def is_loop_completed(self):
+        return not self._is_button_clickable(self.build_coords)
 
     def start_new_rollercoaster(self):
         print(f"Creating a new rollercoaster with {self.station_length} station segments")
@@ -97,7 +99,8 @@ class UIController:
     def remove_piece(self):
         # Remove last piece
         print(f"Remove last track piece")
-        self.click(self.remove_piece)
+        pyautogui.click(self.remove_piece_coords)
+        return True
 
     def add_track_piece(self, piece_type):
         # Helper function to click if button is clickable
