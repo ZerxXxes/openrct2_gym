@@ -11,7 +11,7 @@ class OpenRCT2Env(gym.Env):
         self.track_builder = TrackBuilder(self.ui_controller)
         
         # Define action and observation space
-        self.action_space = gym.spaces.Discrete(17)
+        self.action_space = gym.spaces.Discrete(19)
 
         # Initialize state variables
         self.current_position = None
@@ -19,8 +19,8 @@ class OpenRCT2Env(gym.Env):
         self.current_direction = 0
         self.track_pieces = []
         self.track_length = 0
-        self.max_track_length = 30
-        self.max_steps = 50
+        self.max_track_length = 100
+        self.max_steps = 200
         self.station_length = self.ui_controller.station_length
         self.steps = 0
         self.loop_completed = False
@@ -29,19 +29,19 @@ class OpenRCT2Env(gym.Env):
 
         # Define observation space
         self.observation_space = gym.spaces.Dict({
-            'track_pieces': gym.spaces.Box(low=0, high=16, shape=(self.max_track_length,), dtype=np.int32),
+            'track_pieces': gym.spaces.Box(low=0, high=19, shape=(self.max_track_length,), dtype=np.int32),
             'current_height': gym.spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32),
             'current_direction': gym.spaces.Discrete(4),
             'distance_to_start': gym.spaces.Box(low=0, high=np.sqrt(2000**2 + 2000**2), shape=(1,), dtype=np.float32),
             'track_length': gym.spaces.Discrete(self.max_track_length + 1),
-            'last_piece_type': gym.spaces.Discrete(17),
+            'last_piece_type': gym.spaces.Discrete(19),
             'chain_lift_used': gym.spaces.Discrete(2),
         })
 
     def step(self, action):
         success, new_position, new_direction = self.track_builder.take_action(action, self.current_position, self.current_direction)
         if success:
-            if action == 16:  # Remove piece
+            if action == 18:  # Remove piece
                 print(f"Track piece removed, current position: {self.current_position} current direction: {self.current_direction}")
                 if self.track_pieces:
                     self.track_pieces.pop()
@@ -50,6 +50,8 @@ class OpenRCT2Env(gym.Env):
                 print(f"Track piece placed, current position: {self.current_position} current direction: {self.current_direction}")
                 self.track_length += 1
                 self.track_pieces.append(action)
+                if action == 15:
+                    self.chain_lift_used = True # Chain lift was used, good job!
 
             self.last_piece_type = action
             self.current_position = new_position
@@ -70,6 +72,8 @@ class OpenRCT2Env(gym.Env):
         info = {}
 
         if terminated:
+            self.ui_controller._place_entrance_exit()
+            self.ui_controller.run_ride_evaluation()
             ride_rating = self.evaluate_ride()
             info['ride_rating'] = ride_rating
 
@@ -118,7 +122,7 @@ class OpenRCT2Env(gym.Env):
                 self.track_length >= self.max_track_length)
 
     def _get_observation(self):
-        return {
+        observation = {
             'track_pieces': np.array(self.track_pieces + [0] * (self.max_track_length - len(self.track_pieces)), dtype=np.int32),
             'current_height': np.array([self.current_position[2]], dtype=np.int32),
             'current_direction': self.current_direction,
@@ -128,21 +132,47 @@ class OpenRCT2Env(gym.Env):
             'last_piece_type': self.last_piece_type,
             'chain_lift_used': int(self.chain_lift_used),
         }
-
-    def update_current_state(self, action):
-        # Update current position, direction, and other state variables based on the action
-        # This is a placeholder and should be implemented based on how each action affects the state
-        pass
+        
+        # Add logging to check observation values
+        for key, value in observation.items():
+            if isinstance(value, np.ndarray):
+                print(f"{key}: min={value.min()}, max={value.max()}, shape={value.shape}")
+            else:
+                print(f"{key}: value={value}")
+        
+        # Check if any values exceed their space
+        track_pieces_space = self.observation_space['track_pieces']
+        if isinstance(track_pieces_space, gym.spaces.Box):
+            if np.any(observation['track_pieces'] < track_pieces_space.low) or np.any(observation['track_pieces'] > track_pieces_space.high):
+                raise ValueError(f"track_pieces values are outside the defined space: {observation['track_pieces']}")
+        
+        if observation['current_direction'] >= self.observation_space['current_direction'].n:
+            raise ValueError(f"current_direction value exceeds the defined space: {observation['current_direction']}")
+        
+        if observation['track_length'] >= self.observation_space['track_length'].n:
+            raise ValueError(f"track_length value exceeds the defined space: {observation['track_length']}")
+        
+        if observation['last_piece_type'] >= self.observation_space['last_piece_type'].n:
+            raise ValueError(f"last_piece_type value exceeds the defined space: {observation['last_piece_type']}")
+        
+        return observation
 
     def evaluate_ride(self):
-        # Placeholder for ride evaluation function
-        # This should start the ride, run a lap, and return the ride rating
-        # For now, we'll return a random rating
-        return {
-            'excitement': np.random.randint(0, 100),
-            'intensity': np.random.randint(0, 100),
-            'nausea': np.random.randint(0, 100)
-        }
+        excitement, intensity, nausea = self.ui_controller.run_ride_evaluation()
+        if excitement is None or intensity is None or nausea is None:
+            print("Failed to get ride ratings, using random values")
+            return {
+                'excitement': np.random.randint(0, 100),
+                'intensity': np.random.randint(0, 100),
+                'nausea': np.random.randint(0, 100)
+            }
+        else:
+            return {
+                'excitement': excitement,
+                'intensity': intensity,
+                'nausea': nausea
+            }
+
     def close(self):
         pass
 
