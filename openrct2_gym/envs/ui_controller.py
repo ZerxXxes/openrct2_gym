@@ -96,7 +96,7 @@ class UIController:
         self.click(self.choose_coaster_coords)
         self.click(self.custom_coster_coords)
         self.click(self.place_coords)
-        for _ in range(self.station_length):
+        for _ in range(self.station_length-1):
             self.click(self.build_coords)
 
     def demolish_rollercoaster(self):
