@@ -8,7 +8,7 @@ args = parser.parse_args()
 
 def test_environment():
     env = gym.make('OpenRCT2-v0')
-    test_ride = [15,15,15,0,3,3,5,5,5,0,0,0,0,0,0,0,0,3,3] # Create a small hill with chain and then go back to start
+    test_ride = [15,15,15,0,3,3,5,5,5,0,0,0,0,0,0,0,3,3] # Create a small hill with chain and then go back to start
     
     for episode in range(3):  # Run 3 episodes
         print(f"\nStarting episode {episode + 1}")
