@@ -20,9 +20,9 @@ def train_agent(total_timesteps, checkpoint_freq, eval_freq, model_path=None):
     else:
         print("Creating new model")
         policy_kwargs = dict(
-            features_extractor_class=CustomCombinedExtractor,
-            net_arch=[dict(pi=[128, 128], vf=[128, 128])],
-        model = PPO("MultiInputPolicy", env, policy_kwargs, verbose=1)
+            net_arch=dict(pi=[128, 128], vf=[128, 128]),
+        )
+        model = PPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=1)
 
     # Create log directory
     log_dir = "logs"
@@ -66,7 +66,7 @@ def evaluate_agent(model, env):
 
 def main():
     parser = argparse.ArgumentParser(description="Train RL agent for OpenRCT2")
-    parser.add_argument("--timesteps", type=int, default=20000, help="Total timesteps to train")
+    parser.add_argument("--timesteps", type=int, default=40000, help="Total timesteps to train")
     parser.add_argument("--checkpoint-freq", type=int, default=2000, help="Frequency of checkpoints")
     parser.add_argument("--eval-freq", type=int, default=10000, help="Frequency of evaluations")
     parser.add_argument("--model-path", type=str, help="Path to a saved model to continue training")

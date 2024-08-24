@@ -159,6 +159,7 @@ class OpenRCT2Env(gym.Env):
         return observation
 
     def evaluate_ride(self):
+    #TODO Fix run_ride_evaluation() and stop returning random values
         excitement, intensity, nausea = self.ui_controller.run_ride_evaluation()
         if excitement is None or intensity is None or nausea is None:
             print("Failed to get ride ratings, using random values")
