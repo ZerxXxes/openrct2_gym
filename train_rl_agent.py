@@ -4,11 +4,27 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.callbacks import BaseCallback
 import os
 import argparse
 
+class TensorboardCallback(BaseCallback):
+    """
+    Custom callback for plotting additional values in tensorboard.
+    """
+    def __init__(self, verbose=0):
+        super(TensorboardCallback, self).__init__(verbose)
+
+    def _on_step(self) -> bool:
+        # Log scalar value (here a random variable)
+        value = self.model.get_env().get_attr('track_length')[0]
+        self.logger.record('track_length', value)
+        return True
+
 def create_env():
     env = gym.make('OpenRCT2-v0')
+    env = Monitor(env)  # Wrap the environment
     return DummyVecEnv([lambda: env])
 
 def train_agent(total_timesteps, checkpoint_freq, eval_freq, model_path=None):
@@ -23,6 +39,11 @@ def train_agent(total_timesteps, checkpoint_freq, eval_freq, model_path=None):
             net_arch=dict(pi=[128, 128], vf=[128, 128]),
         )
         model = PPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=1)
+
+    # Callbacks
+    checkpoint_callback = CheckpointCallback(save_freq=checkpoint_freq, save_path='./logs/', name_prefix='ppo_openrct2_model')
+    eval_callback = EvalCallback(env, best_model_save_path='./logs/best_model', log_path='./logs/', eval_freq=eval_freq)
+    tensorboard_callback = TensorboardCallback()
 
     # Create log directory
     log_dir = "logs"
@@ -47,7 +68,7 @@ def train_agent(total_timesteps, checkpoint_freq, eval_freq, model_path=None):
     try:
         model.learn(
             total_timesteps=total_timesteps,
-            callback=[checkpoint_callback, eval_callback],
+            callback=[checkpoint_callback, eval_callback, tensorboard_callback],
             reset_num_timesteps=False  # Important for continuing training
         )
     except Exception as e:
@@ -66,8 +87,8 @@ def evaluate_agent(model, env):
 
 def main():
     parser = argparse.ArgumentParser(description="Train RL agent for OpenRCT2")
-    parser.add_argument("--timesteps", type=int, default=40000, help="Total timesteps to train")
-    parser.add_argument("--checkpoint-freq", type=int, default=2000, help="Frequency of checkpoints")
+    parser.add_argument("--timesteps", type=int, default=100000, help="Total timesteps to train")
+    parser.add_argument("--checkpoint-freq", type=int, default=5000, help="Frequency of checkpoints")
     parser.add_argument("--eval-freq", type=int, default=10000, help="Frequency of evaluations")
     parser.add_argument("--model-path", type=str, help="Path to a saved model to continue training")
     args = parser.parse_args()
