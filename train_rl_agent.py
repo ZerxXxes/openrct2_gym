@@ -22,6 +22,22 @@ class TensorboardCallback(BaseCallback):
         self.logger.record('track_length', value)
         return True
 
+class ProgressCallback(BaseCallback):
+    def __init__(self, verbose=0):
+        super(ProgressCallback, self).__init__(verbose)
+        self.episode_count = 0
+
+    def _on_step(self) -> bool:
+        if self.locals['dones'][0]:
+            self.episode_count += 1
+            total_timesteps = self.num_timesteps
+            print(f"Episode: {self.episode_count}")
+            print(f"Total timesteps: {total_timesteps}")
+            print(f"Episode reward: {self.locals['rewards'][0]:.2f}")
+            print(f"Track length: {self.training_env.get_attr('track_length')[0]}")
+            print("------")
+        return True
+
 def create_env():
     env = gym.make('OpenRCT2-v0')
     env = Monitor(env)  # Wrap the environment
@@ -44,6 +60,7 @@ def train_agent(total_timesteps, checkpoint_freq, eval_freq, model_path=None):
     checkpoint_callback = CheckpointCallback(save_freq=checkpoint_freq, save_path='./logs/', name_prefix='ppo_openrct2_model')
     eval_callback = EvalCallback(env, best_model_save_path='./logs/best_model', log_path='./logs/', eval_freq=eval_freq)
     tensorboard_callback = TensorboardCallback()
+    progress_callback = ProgressCallback()
 
     # Create log directory
     log_dir = "logs"
@@ -68,7 +85,7 @@ def train_agent(total_timesteps, checkpoint_freq, eval_freq, model_path=None):
     try:
         model.learn(
             total_timesteps=total_timesteps,
-            callback=[checkpoint_callback, eval_callback, tensorboard_callback],
+            callback=[checkpoint_callback, eval_callback, tensorboard_callback, progress_callback],
             reset_num_timesteps=False  # Important for continuing training
         )
     except Exception as e:
