@@ -38,7 +38,7 @@ def train_agent(total_timesteps, checkpoint_freq, eval_freq, model_path=None):
         policy_kwargs = dict(
             net_arch=dict(pi=[128, 128], vf=[128, 128]),
         )
-        model = PPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=1)
+        model = PPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./ppo_openrct2_tensorboard/")
 
     # Callbacks
     checkpoint_callback = CheckpointCallback(save_freq=checkpoint_freq, save_path='./logs/', name_prefix='ppo_openrct2_model')
