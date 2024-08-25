@@ -260,7 +260,7 @@ class TrackBuilder:
         elif action == 18:
             if not self.history:
                 # The first action can not be to remove a piece
-                success = False
+                return False
             success = self.ui_controller.remove_piece()
             if success and self.history:
                 # Revert to the previous state
