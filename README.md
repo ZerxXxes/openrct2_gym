@@ -1,4 +1,6 @@
 # openrct2_gym
+[Example output](https://github.com/user-attachments/assets/116cab1b-262a-4f88-a0dd-e8129195f03c)
+
 This is a custom environment for [Gymnasium](https://gymnasium.farama.org/) that aims to train a RL agent to build great rollercoasters in OpenRCT2.
 
 This project is heavily inspired by Dylan Eberts [neural_rct](https://dylanebert.com/neural_rct/) and Kevin Burke who held a [talk](https://www.youtube.com/watch?v=6mRFITUwCVU) which I thought was awesome.
