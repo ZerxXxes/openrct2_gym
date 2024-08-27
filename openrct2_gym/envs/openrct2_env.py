@@ -24,8 +24,10 @@ class OpenRCT2Env(gym.Env):
         self.station_length = self.ui_controller.station_length
         self.steps = 0
         self.loop_completed = False
-        self.chain_lift_used = False
         self.last_piece_type = 0
+        self.chain_lift_count = 0
+        self.max_chain_lifts = 15
+        self.last_action = None
 
         # Define observation space
         self.observation_space = gym.spaces.Dict({
@@ -35,7 +37,6 @@ class OpenRCT2Env(gym.Env):
             'distance_to_start': gym.spaces.Box(low=0, high=np.sqrt(2000**2 + 2000**2), shape=(1,), dtype=np.float32),
             'track_length': gym.spaces.Discrete(self.max_track_length + 1),
             'last_piece_type': gym.spaces.Discrete(19),
-            'chain_lift_used': gym.spaces.Discrete(2),
         })
 
     def step(self, action):
@@ -48,13 +49,12 @@ class OpenRCT2Env(gym.Env):
             else:
                 self.track_length += 1
                 self.track_pieces.append(action)
-                if action == 15:
-                    self.chain_lift_used = True # Chain lift was used, good job!
 
             self.last_piece_type = action
             self.current_position = new_position
             self.current_direction = new_direction
-
+        
+        self.last_action = action
         observation = self._get_observation()
         reward = self._calculate_reward(success)
 
@@ -93,8 +93,9 @@ class OpenRCT2Env(gym.Env):
         self.track_length = 0
         self.steps = 0
         self.loop_completed = False
-        self.chain_lift_used = False
         self.last_piece_type = 0
+        self.chain_lift_count = 0
+        self.last_action = None
         self.track_builder.history.clear()  # Clear the history when resetting the environment
 
         # Build inital station
@@ -114,16 +115,30 @@ class OpenRCT2Env(gym.Env):
             # Base reward for successful action
             reward += 1
 
-            if self.track_length < 15 and self.last_piece_type == 15:  # Give reward for placing chain lifts in the begining
-                reward += 5
+            # Reward for placing chain lifts in the beginning
+            if self.track_length < 30 and self.last_piece_type == 15:
+                if self.chain_lift_count < self.max_chain_lifts:
+                    reward += 5
+                    self.chain_lift_count += 1
+            
+            # Penalty for removing pieces
+            if self.last_action == 18:
+                reward -= 2
+
+            # Reward for continuous building
+            if self.last_action != 18 and self.last_action == self.last_piece_type:
+                reward += 0.2
+
             # Reward for building a longer track
             if self.track_length > 50:
                 reward += 0.5
+
             # Encourage returning to start for longer tracks
             if self.track_length > 80:
                 distance_to_start = self._calculate_distance_to_start()
-                reward += max(0, 10 - distance_to_start) * 0.1
+                reward += max(0, 25 - distance_to_start) * 0.1
         else:
+            # If segment could not be placed, punish the agent
             reward -= 0.5
 
         return reward
@@ -146,7 +161,6 @@ class OpenRCT2Env(gym.Env):
                                                    (self.current_position[1] - self.goal_position[1])**2)], dtype=np.float32),
             'track_length': self.track_length,
             'last_piece_type': self.last_piece_type,
-            'chain_lift_used': int(self.chain_lift_used),
         }
         
         # Check if any values exceed their space
