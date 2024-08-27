@@ -9,7 +9,7 @@ import re
 class UIController:
     def __init__(self):
         self.station_length = 6
-        self.delay = 0.2
+        self.delay = 0.1
         self.faded_color = np.array([123, 103, 75])
         self.build_button_bg = np.array([143, 127, 107])
         self.ride_windows_bg = np.array([179, 79, 79])
@@ -113,10 +113,8 @@ class UIController:
 
     def add_track_piece(self, piece_type):
         # Helper function to click if button is clickable
-        print(f"Trying to place: {piece_type}")
         def safe_click(coords):
             if not self._is_button_clickable(coords):
-                print(f"Piece {piece_type} not possible to place here, decrease reward")
                 return False
             self.click(coords)
             return True
