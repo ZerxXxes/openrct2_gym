@@ -42,12 +42,10 @@ class OpenRCT2Env(gym.Env):
         success, new_position, new_direction = self.track_builder.take_action(action, self.current_position, self.current_direction)
         if success:
             if action == 18:  # Remove piece
-                print(f"Track piece removed, current position: {self.current_position} current direction: {self.current_direction}")
                 if self.track_pieces:
                     self.track_pieces.pop()
                     self.track_length -= 1
             else:
-                print(f"Track piece placed, current position: {self.current_position} current direction: {self.current_direction}")
                 self.track_length += 1
                 self.track_pieces.append(action)
                 if action == 15:
@@ -69,7 +67,7 @@ class OpenRCT2Env(gym.Env):
         # Check if episode was truncated
         truncated = self._is_trunkated()
         self.steps += 1
-        print("Current step: %s" % self.steps)
+        print("Current step: %s, Track length: %s, Current position: %s, Last piece: %s, Distance to goal: %f" % (self.steps, self.track_length, self.current_position, self.last_piece_type, float(self._calculate_distance_to_start())))
         info = {}
 
         if terminated:
@@ -111,12 +109,29 @@ class OpenRCT2Env(gym.Env):
         return observation, info
 
     def _calculate_reward(self, success):
-        if self.loop_completed:
-            return 100  # Big reward for completing the loop
-        elif success:
-            return 1
+        reward = 0
+        if success:
+            # Base reward for successful action
+            reward += 1
+
+            if self.track_length < 15 and self.last_piece_type == 15:  # Give reward for placing chain lifts in the begining
+                reward += 5
+            # Reward for building a longer track
+            if self.track_length > 50:
+                reward += 0.5
+            # Encourage returning to start for longer tracks
+            if self.track_length > 80:
+                distance_to_start = self._calculate_distance_to_start()
+                reward += max(0, 10 - distance_to_start) * 0.1
         else:
-            return -0.5
+            reward -= 0.5
+
+        return reward
+
+    def _calculate_distance_to_start(self):
+        return np.sqrt((self.current_position[0] - self.goal_position[0])**2 + 
+                       (self.current_position[1] - self.goal_position[1])**2 +
+                       (self.current_position[2] - self.goal_position[2])**2)
 
     def _is_trunkated(self):
         return (self.steps >= self.max_steps or 
@@ -133,13 +148,6 @@ class OpenRCT2Env(gym.Env):
             'last_piece_type': self.last_piece_type,
             'chain_lift_used': int(self.chain_lift_used),
         }
-        
-        # Add logging to check observation values
-        for key, value in observation.items():
-            if isinstance(value, np.ndarray):
-                print(f"{key}: min={value.min()}, max={value.max()}, shape={value.shape}")
-            else:
-                print(f"{key}: value={value}")
         
         # Check if any values exceed their space
         track_pieces_space = self.observation_space['track_pieces']
