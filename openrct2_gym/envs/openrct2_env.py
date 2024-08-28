@@ -129,14 +129,18 @@ class OpenRCT2Env(gym.Env):
             if self.last_action != 18 and self.last_action == self.last_piece_type:
                 reward += 0.2
 
+            # Big reward for completing the loop
+            if self.loop_completed:
+                reward += 100
+            
             # Reward for building a longer track
-            if self.track_length > 50:
-                reward += 0.5
+            #if self.track_length > 50:
+            #    reward += 0.5
 
             # Encourage returning to start for longer tracks
-            if self.track_length > 80:
+            if self.track_length > 50:
                 distance_to_start = self._calculate_distance_to_start()
-                reward += max(0, 25 - distance_to_start) * 0.1
+                reward += max(0, 30 - distance_to_start) * 0.2
         else:
             # If segment could not be placed, punish the agent
             reward -= 0.5
