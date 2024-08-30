@@ -19,8 +19,8 @@ class OpenRCT2Env(gym.Env):
         self.current_direction = 0
         self.track_pieces = []
         self.track_length = 0
-        self.max_track_length = 100
-        self.max_steps = 200
+        self.max_track_length = 250
+        self.max_steps = 256
         self.station_length = self.ui_controller.station_length
         self.steps = 0
         self.loop_completed = False
@@ -116,7 +116,7 @@ class OpenRCT2Env(gym.Env):
             reward += 1
 
             # Reward for placing chain lifts in the beginning
-            if self.track_length < 30 and self.last_piece_type == 15:
+            if self.track_length < 17 and self.last_piece_type == 15:
                 if self.chain_lift_count < self.max_chain_lifts:
                     reward += 5
                     self.chain_lift_count += 1
@@ -126,21 +126,25 @@ class OpenRCT2Env(gym.Env):
                 reward -= 2
 
             # Reward for continuous building
-            if self.last_action != 18 and self.last_action == self.last_piece_type:
-                reward += 0.2
+            #if self.last_action != 18 and self.last_action == self.last_piece_type:
+            #    reward += 0.2
 
             # Big reward for completing the loop
             if self.loop_completed:
                 reward += 100
             
+            # Penalty for excessive height to discourage sky-high coasters
+            if self.current_position[2] > 22:  # Adjust the height threshold as needed
+                reward -= 0.2
+
             # Reward for building a longer track
             #if self.track_length > 50:
             #    reward += 0.5
 
             # Encourage returning to start for longer tracks
-            if self.track_length > 50:
+            if self.track_length > 40:
                 distance_to_start = self._calculate_distance_to_start()
-                reward += max(0, 30 - distance_to_start) * 0.2
+                reward += max(0, 40 - distance_to_start) * 0.5
         else:
             # If segment could not be placed, punish the agent
             reward -= 0.5
