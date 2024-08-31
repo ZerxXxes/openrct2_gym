@@ -52,7 +52,7 @@ def train_agent(total_timesteps, checkpoint_freq, eval_freq, model_path=None):
     else:
         print("Creating new model")
         policy_kwargs = dict(
-            net_arch=dict(pi=[128, 128], vf=[128, 128]),
+            net_arch=dict(pi=[256, 256], vf=[256, 256]),
         )
         model = PPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=1, tensorboard_log="./ppo_openrct2_tensorboard/")
 
@@ -105,7 +105,7 @@ def evaluate_agent(model, env):
 def main():
     parser = argparse.ArgumentParser(description="Train RL agent for OpenRCT2")
     parser.add_argument("--timesteps", type=int, default=100000, help="Total timesteps to train")
-    parser.add_argument("--checkpoint-freq", type=int, default=5000, help="Frequency of checkpoints")
+    parser.add_argument("--checkpoint-freq", type=int, default=10000, help="Frequency of checkpoints")
     parser.add_argument("--eval-freq", type=int, default=10000, help="Frequency of evaluations")
     parser.add_argument("--model-path", type=str, help="Path to a saved model to continue training")
     args = parser.parse_args()
