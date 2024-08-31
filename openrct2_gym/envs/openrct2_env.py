@@ -141,6 +141,11 @@ class OpenRCT2Env(gym.Env):
             #if self.track_length > 50:
             #    reward += 0.5
 
+            # Punish going far away from start
+            if self._calculate_distance_to_start() > 40
+                distance_to_start = self._calculate_distance_to_start()
+                reward -= max(0, distance_to_start - 40) * 0.5
+
             # Encourage returning to start for longer tracks
             if self.track_length > 40:
                 distance_to_start = self._calculate_distance_to_start()
