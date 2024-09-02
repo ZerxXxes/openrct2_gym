@@ -67,7 +67,7 @@ class OpenRCT2Env(gym.Env):
         # Check if episode was truncated
         truncated = self._is_trunkated()
         self.steps += 1
-        print("Current step: %s, Track length: %s, Current position: %s, Last piece: %s, Distance to goal: %f" % (self.steps, self.track_length, self.current_position, self.last_piece_type, float(self._calculate_distance_to_start())))
+        print("Current step: %s, Track length: %s, Current position: %s, Last piece: %s, Distance to goal: %f, Chainlifts: %s" % (self.steps, self.track_length, self.current_position, self.last_piece_type, float(self._calculate_distance_to_start()), self.chain_lift_count))
         info = {}
 
         if terminated:
@@ -142,18 +142,18 @@ class OpenRCT2Env(gym.Env):
             #    reward += 0.5
 
             # Punish going far away from start
-            if self._calculate_distance_to_start() > 40
+            if self._calculate_distance_to_start() > 40:
                 distance_to_start = self._calculate_distance_to_start()
-                reward -= max(0, distance_to_start - 40) * 0.5
+                reward -= max(0, distance_to_start - 40) * 0.1
 
             # Encourage returning to start for longer tracks
             if self.track_length > 40:
                 distance_to_start = self._calculate_distance_to_start()
-                reward += max(0, 40 - distance_to_start) * 0.5
+                reward += max(0, 40 - distance_to_start) * 0.1
         else:
             # If segment could not be placed, punish the agent
             reward -= 0.5
-
+        print("Reward was: %s" % reward)
         return reward
 
     def _calculate_distance_to_start(self):
@@ -170,8 +170,7 @@ class OpenRCT2Env(gym.Env):
             'track_pieces': np.array(self.track_pieces + [0] * (self.max_track_length - len(self.track_pieces)), dtype=np.int32),
             'current_height': np.array([self.current_position[2]], dtype=np.int32),
             'current_direction': self.current_direction,
-            'distance_to_start': np.array([np.sqrt((self.current_position[0] - self.goal_position[0])**2 + 
-                                                   (self.current_position[1] - self.goal_position[1])**2)], dtype=np.float32),
+            'distance_to_start': self._calculate_distance_to_start(),
             'track_length': self.track_length,
             'last_piece_type': self.last_piece_type,
         }
