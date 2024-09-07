@@ -67,7 +67,7 @@ class OpenRCT2Env(gym.Env):
         # Check if episode was truncated
         truncated = self._is_trunkated()
         self.steps += 1
-        print("Current step: %s, Track length: %s, Current position: %s, Last piece: %s, Distance to goal: %f, Chainlifts: %s" % (self.steps, self.track_length, self.current_position, self.last_piece_type, float(self._calculate_distance_to_start()), self.chain_lift_count))
+        print("Current step: %s, Track length: %s, Current position: %s, Last piece: %s, Distance to goal: %f, Chainlifts: %s, Direction: %s, Goal: %s" % (self.steps, self.track_length, self.current_position, self.last_piece_type, self._calculate_distance_to_start(), self.chain_lift_count, self.current_direction, self.goal_position))
         info = {}
 
         if terminated:
@@ -86,7 +86,7 @@ class OpenRCT2Env(gym.Env):
         self.current_position = [500, 500, 0]
 
         # Set goal position (south end of the station)
-        self.goal_position = [500, 500 + self.station_length, 0]
+        self.goal_position = [500, 500 - self.station_length, 0]
 
         self.current_direction = 0
         self.track_pieces = []
@@ -157,9 +157,10 @@ class OpenRCT2Env(gym.Env):
         return reward
 
     def _calculate_distance_to_start(self):
-        return np.sqrt((self.current_position[0] - self.goal_position[0])**2 + 
-                       (self.current_position[1] - self.goal_position[1])**2 +
-                       (self.current_position[2] - self.goal_position[2])**2)
+        point_a = np.array(self.current_position)
+        point_b = np.array(self.goal_position)
+        distance = float(np.linalg.norm(point_a - point_b))
+        return np.array([distance], dtype=np.float32)
 
     def _is_trunkated(self):
         return (self.steps >= self.max_steps or 
