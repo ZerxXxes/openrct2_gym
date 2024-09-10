@@ -15,11 +15,31 @@ class TensorboardCallback(BaseCallback):
     """
     def __init__(self, verbose=0):
         super(TensorboardCallback, self).__init__(verbose)
+        self.loop_completed_count = 0
+        self.episode_count = 0
 
     def _on_step(self) -> bool:
         # Log scalar value (here a random variable)
         value = self.model.get_env().get_attr('track_length')[0]
         self.logger.record('track_length', value)
+        # Check if episode is done
+        if self.locals['dones'][0]:
+            self.episode_count += 1
+            
+            # Check if the episode terminated (loop completed) or was truncated
+            terminated = self.locals['infos'][0].get('terminal_observation') is not None
+            
+            if terminated:
+                self.loop_completed_count += 1
+                self.logger.record('loop_completed', 1.0)
+                self.logger.record('completed_track_length', track_length)
+            else:
+                self.logger.record('loop_completed', 0.0)
+            
+            # Log the percentage of episodes where loop was completed
+            loop_completion_rate = self.loop_completed_count / self.episode_count
+            self.logger.record('loop_completion_rate', loop_completion_rate)
+
         return True
 
 class ProgressCallback(BaseCallback):
@@ -31,10 +51,16 @@ class ProgressCallback(BaseCallback):
         if self.locals['dones'][0]:
             self.episode_count += 1
             total_timesteps = self.num_timesteps
+            track_length = self.training_env.get_attr('track_length')[0]
+            
+            # Check if the episode terminated (loop completed) or was truncated
+            terminated = self.locals['infos'][0].get('terminal_observation') is not None
+            
             print(f"Episode: {self.episode_count}")
             print(f"Total timesteps: {total_timesteps}")
             print(f"Episode reward: {self.locals['rewards'][0]:.2f}")
-            print(f"Track length: {self.training_env.get_attr('track_length')[0]}")
+            print(f"Track length: {track_length}")
+            print(f"Loop completed: {terminated}")
             print("------")
         return True
 
@@ -104,7 +130,7 @@ def evaluate_agent(model, env):
 
 def main():
     parser = argparse.ArgumentParser(description="Train RL agent for OpenRCT2")
-    parser.add_argument("--timesteps", type=int, default=100000, help="Total timesteps to train")
+    parser.add_argument("--timesteps", type=int, default=200000, help="Total timesteps to train")
     parser.add_argument("--checkpoint-freq", type=int, default=10000, help="Frequency of checkpoints")
     parser.add_argument("--eval-freq", type=int, default=10000, help="Frequency of evaluations")
     parser.add_argument("--model-path", type=str, help="Path to a saved model to continue training")

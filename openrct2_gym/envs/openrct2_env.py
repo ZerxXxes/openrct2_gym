@@ -67,7 +67,7 @@ class OpenRCT2Env(gym.Env):
         # Check if episode was truncated
         truncated = self._is_trunkated()
         self.steps += 1
-        print("Current step: %s, Track length: %s, Current position: %s, Last piece: %s, Distance to goal: %f, Chainlifts: %s, Direction: %s, Goal: %s" % (self.steps, self.track_length, self.current_position, self.last_piece_type, self._calculate_distance_to_start(), self.chain_lift_count, self.current_direction, self.goal_position))
+        print("Current step: %s, Track length: %s, Current position: %s, Last piece: %s, Distance to goal: %f, Chainlifts: %s, Direction: %s" % (self.steps, self.track_length, self.current_position, self.last_piece_type, self._calculate_distance_to_start(), self.chain_lift_count, self.current_direction))
         info = {}
 
         if terminated:
