@@ -20,8 +20,8 @@ class TensorboardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         # Log scalar value (here a random variable)
-        value = self.model.get_env().get_attr('track_length')[0]
-        self.logger.record('track_length', value)
+        track_length = self.model.get_env().get_attr('track_length')[0]
+        self.logger.record('track_length', track_length)
         # Check if episode is done
         if self.locals['dones'][0]:
             self.episode_count += 1
@@ -51,7 +51,6 @@ class ProgressCallback(BaseCallback):
         if self.locals['dones'][0]:
             self.episode_count += 1
             total_timesteps = self.num_timesteps
-            track_length = self.training_env.get_attr('track_length')[0]
             
             # Check if the episode terminated (loop completed) or was truncated
             terminated = self.locals['infos'][0].get('terminal_observation') is not None
@@ -59,7 +58,6 @@ class ProgressCallback(BaseCallback):
             print(f"Episode: {self.episode_count}")
             print(f"Total timesteps: {total_timesteps}")
             print(f"Episode reward: {self.locals['rewards'][0]:.2f}")
-            print(f"Track length: {track_length}")
             print(f"Loop completed: {terminated}")
             print("------")
         return True

@@ -67,7 +67,7 @@ class OpenRCT2Env(gym.Env):
         # Check if episode was truncated
         truncated = self._is_trunkated()
         self.steps += 1
-        print("Current step: %s, Track length: %s, Current position: %s, Last piece: %s, Distance to goal: %f, Chainlifts: %s, Direction: %s" % (self.steps, self.track_length, self.current_position, self.last_piece_type, self._calculate_distance_to_start(), self.chain_lift_count, self.current_direction))
+        print("Current step: %s, Track length: %s, Current position: %s, Last action: %s, Distance to goal: %f, Chainlifts: %s, Direction: %s" % (self.steps, self.track_length, self.current_position, self.last_action, self._calculate_distance_to_start(), self.chain_lift_count, self.current_direction))
         info = {}
 
         if terminated:
@@ -134,7 +134,7 @@ class OpenRCT2Env(gym.Env):
                 reward += 100
             
             # Penalty for excessive height to discourage sky-high coasters
-            if self.current_position[2] > 22:  # Adjust the height threshold as needed
+            if self.current_position[2] > 22:
                 reward -= 0.2
 
             # Reward for building a longer track
@@ -144,12 +144,12 @@ class OpenRCT2Env(gym.Env):
             # Punish going far away from start
             if self._calculate_distance_to_start() > 40:
                 distance_to_start = self._calculate_distance_to_start()
-                reward -= max(0, distance_to_start - 40) * 0.1
+                reward -= max(0, distance_to_start[0] - 40) * 0.1
 
             # Encourage returning to start for longer tracks
             if self.track_length > 40:
                 distance_to_start = self._calculate_distance_to_start()
-                reward += max(0, 40 - distance_to_start) * 0.1
+                reward += max(0, 40 - distance_to_start[0]) * 0.2
         else:
             # If segment could not be placed, punish the agent
             reward -= 0.5
