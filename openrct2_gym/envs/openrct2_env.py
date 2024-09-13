@@ -32,7 +32,7 @@ class OpenRCT2Env(gym.Env):
         # Define observation space
         self.observation_space = gym.spaces.Dict({
             'track_pieces': gym.spaces.Box(low=0, high=19, shape=(self.max_track_length,), dtype=np.int32),
-            'current_position': gym.spaces.Box(low=0, high=2000, shape=(3,), dtype=np.int32), 
+            'current_position': gym.spaces.Box(low=-20, high=1000, shape=(3,), dtype=np.int32),
             'current_direction': gym.spaces.Discrete(4),
             'distance_to_start': gym.spaces.Box(low=0, high=np.sqrt(2000**2 + 2000**2), shape=(1,), dtype=np.float32),
             'track_length': gym.spaces.Discrete(self.max_track_length + 1),
