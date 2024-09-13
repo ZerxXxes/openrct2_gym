@@ -32,7 +32,7 @@ class OpenRCT2Env(gym.Env):
         # Define observation space
         self.observation_space = gym.spaces.Dict({
             'track_pieces': gym.spaces.Box(low=0, high=19, shape=(self.max_track_length,), dtype=np.int32),
-            'current_height': gym.spaces.Box(low=0, high=100, shape=(1,), dtype=np.int32),
+            'current_position': gym.spaces.Box(low=0, high=2000, shape=(3,), dtype=np.int32), 
             'current_direction': gym.spaces.Discrete(4),
             'distance_to_start': gym.spaces.Box(low=0, high=np.sqrt(2000**2 + 2000**2), shape=(1,), dtype=np.float32),
             'track_length': gym.spaces.Discrete(self.max_track_length + 1),
@@ -169,7 +169,7 @@ class OpenRCT2Env(gym.Env):
     def _get_observation(self):
         observation = {
             'track_pieces': np.array(self.track_pieces + [0] * (self.max_track_length - len(self.track_pieces)), dtype=np.int32),
-            'current_height': np.array([self.current_position[2]], dtype=np.int32),
+            'current_position': np.array(self.current_position, dtype=np.int32),
             'current_direction': self.current_direction,
             'distance_to_start': self._calculate_distance_to_start(),
             'track_length': self.track_length,
@@ -181,6 +181,10 @@ class OpenRCT2Env(gym.Env):
         if isinstance(track_pieces_space, gym.spaces.Box):
             if np.any(observation['track_pieces'] < track_pieces_space.low) or np.any(observation['track_pieces'] > track_pieces_space.high):
                 raise ValueError(f"track_pieces values are outside the defined space: {observation['track_pieces']}")
+
+        current_position_space = self.observation_space['current_position'] 
+        if np.any(observation['current_position'] < current_position_space.low) or np.any(observation['current_position'] > current_position_space.high):
+            raise ValueError(f"current_position values are outside the defined space: {observation['current_position']}")
         
         if observation['current_direction'] >= self.observation_space['current_direction'].n:
             raise ValueError(f"current_direction value exceeds the defined space: {observation['current_direction']}")
