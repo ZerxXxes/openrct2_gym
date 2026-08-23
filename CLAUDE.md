@@ -260,6 +260,59 @@ Cost, stated honestly: quality keeps improving past 90 (library median E 5.54 at
 pieces, 6.34 at 105-119), so the cut trades ~0.4 of attainable excitement for variety being
 possible at all — acceptable only because the criteria ask for E >= 4.5, not maximal E.
 
+### Variety: what moves it is FREQUENCY, and entropy is the only frequency lever (Aug-22)
+
+The seed-conditioned campaign asked the agent to build five different footprint families.
+It builds one. The full ledger of what was tried, because the pattern is unambiguous:
+
+**Nine value-side levers, all null.** Guidance falloffs, cold-episode fraction, exploration
+floor, scaffold at high and low k, piece budget, gate floor, dense weight, and a
+non-decaying novelty bonus (`R_novelty`, below). Every one changed what a non-oval build
+is WORTH. None changed how often one is ATTEMPTED, and the attempt rate is ~0.05%, so
+none of them was ever collected. Measured for the novelty bonus specifically: over 10,127
+unaided builds it paid an average of **1.2 of a possible 250** because the agent produced
+a rare shape once per ~200 builds. The mechanism was verified correct; it was simply never
+claimed.
+
+**Entropy is the one thing that has ever moved it — and it decays.** Measured across five
+days at a constant Phase 6 on one policy lineage (`harvest_cold`, `prefix_len=0`):
+
+| entropy (nats) | unaided non-oval rate | families seen |
+|---|---|---|
+| 0.97 | 0.92% | spiral, out_and_back, winding |
+| 0.89 | 0.28% | + serpentine |
+| 0.68 | 0.03% | |
+| 0.41 | 0.01% | |
+
+A fixed `ent_coef` has an EQUILIBRIUM entropy, and that equilibrium falls as the policy
+converges. So an entropy floor is not a floor, it is a headwind: `ent_coef` 0.045 held
+~0.95 nats for about two days and then leaked back to 0.74 with the guard pinned at max
+boost the whole time. **It buys time, it does not hold.** Tripling `ent_coef`
+(0.015 -> 0.045) bought only +0.08 nats of equilibrium; reaching 0.85 from a converged
+policy would need ~0.2, which destroys the policy. You cannot re-inflate a saturated
+softmax -- attempt 1 of the variety floor tried and plateaued at 0.40 nats.
+
+**Rewinding works because it restores entropy, not skill.** The 08-12 12:04 checkpoint had
+entropy 0.876 AND quality 5.55 (quality had jumped 2.66 -> 5.55 in the preceding six
+hours, which is exactly when variety died: the policy found a high-excitement OVAL recipe
+and collapsed onto it). Resuming there restored variety to 0.35% for ~2 days.
+
+**The remaining gap is one specific motor skill.** Over 6,193 unaided builds:
+`switch_count` was 0 in 6,191 and `turn_count` was 4 in 6,170. Four same-direction
+90-degree turns is exactly the 360 needed to close a loop; eight is a spiral. Both are
+REPETITION of what the policy already does, which is why entropy buys spirals and nothing
+else. Every switch-requiring family (out_and_back / winding / serpentine) needs a
+CANCELING TURN PAIR -- a coordinated multi-piece structure that random exploration does
+not stumble into. Priming hands it over and the policy KEEPS it (8,981 primed harvests
+carry switches) but never initiates it; annealing the handout away drifts at
+-0.005/1M steps against 0.036 noise, and its state is not serialized so every restart
+resets it.
+
+RULE: before adding another term to the reward, check whether the behaviour it pays for is
+ever EMITTED. A reward for an action taken 0.05% of the time is worth 0.05% of its face
+value. The levers that have ever worked on this project changed what the agent DOES
+(scaffolding, action masking, forced openings), not what it earns.
+
 ### The warm-start frontier is not a competence proxy (Aug-11)
 
 `warm_k_max` stalled at 8-13 for millions of steps while cold completion sat at 0.72-0.85:
