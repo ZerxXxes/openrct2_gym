@@ -316,6 +316,23 @@ skill no other lever ever produced. Non-oval quality median 5.97 vs the 5.63 ova
 baseline, though it is bimodal (a second winding rated 1.44), so shape does not imply
 quality.
 
+**On-demand verdict (Aug-29, `run_model.py --family N`, 4 builds each):** all 20 requested
+builds came out OVAL — 4/4 hit for oval, 0/4 for every other family. The seed is in the
+observation on every step and changes essentially nothing.
+
+The reward column is the interesting part: ~2,500 when oval is requested and the family
+gate is satisfied, ~1,180 when serpentine is requested and it is missed. **The agent
+knowingly forfeits ~50% of its payout on every mismatched build and still builds the
+oval.** So this is not a conditioning failure -- the policy is making a rational trade we
+set up: eating the family penalty beats risking a shape it cannot reliably close. It
+follows that MORE penalty is the wrong lever (it trades against completion, which is at
+0.99); the shape has to become achievable, not the alternative more painful.
+
+Also: inference is deterministic by default, so repeated builds with the same seed are
+byte-identical (episodes 3 and 4 matched exactly in every block). "Generate 10 coasters"
+from one checkpoint yields 5 distinct builds repeated, unless `--sample` is passed. Do not
+judge a checkpoint's variety from a batch without it.
+
 **RULE 1:** before adding a reward term, check whether the behaviour it pays for is ever
 EMITTED. That explains all nine failures.
 
