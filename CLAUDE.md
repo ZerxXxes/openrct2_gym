@@ -333,6 +333,34 @@ byte-identical (episodes 3 and 4 matched exactly in every block). "Generate 10 c
 from one checkpoint yields 5 distinct builds repeated, unless `--sample` is passed. Do not
 judge a checkpoint's variety from a batch without it.
 
+**RESOLUTION (Sep-4): the diversity reward decays too — through the FREQUENCY door.**
+Measured across the full run, entropy fell monotonically the whole time and variety
+tracked it down:
+
+| entropy (nats) | 0.71 | 0.65 | 0.62 |
+|---|---|---|---|
+| unaided non-oval rate | 0.235% | 0.119% | **0.013%** |
+
+The final point is 2 events in 15,002 unaided builds where the earlier rate predicts 18
+(P = 0.0003, so this is not noise). The bonus's VALUE never decayed — an oval still pays
+~0 and a rare shape still pays ~250, exactly as designed. But the bonus can only be
+COLLECTED on a build the policy actually emits, and the emission rate is governed by
+entropy, which falls as the policy converges. So the frequency constraint reasserts
+itself through the back door.
+
+Two hypotheses were tested and REFUTED on the way, both worth not repeating:
+  * "the restart emptied the novelty windows" — windows are 200/worker and refill after
+    ~4,000 cold builds; the rate had not recovered by 15,000, and the decline predates
+    the restart.
+  * "the rate is still climbing" (the Aug-26 reading) — true then, but it peaked at
+    0.235% and declined monotonically afterwards.
+
+So the campaign's synthesis is ONE mechanism, not several: everything that has ever moved
+variety moved it by raising the ATTEMPT RATE, and everything that raised the attempt rate
+was temporary, because a fixed ent_coef's equilibrium entropy falls with convergence. The
+diversity reward is still the best lever found (6x rise, three families unaided, the
+canceling-turn-pair skill nothing else produced) — it just buys time rather than holding.
+
 **RULE 1:** before adding a reward term, check whether the behaviour it pays for is ever
 EMITTED. That explains all nine failures.
 
