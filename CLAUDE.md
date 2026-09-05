@@ -316,7 +316,8 @@ skill no other lever ever produced. Non-oval quality median 5.97 vs the 5.63 ova
 baseline, though it is bimodal (a second winding rated 1.44), so shape does not imply
 quality.
 
-**On-demand verdict (Aug-29, `run_model.py --family N`, 4 builds each):** all 20 requested
+**On-demand verdict (Aug-29 — SUPERSEDED Sep-5, see the seed-conditioning section
+above; kept because the reward arithmetic below is still the right diagnosis):** all 20 requested
 builds came out OVAL — 4/4 hit for oval, 0/4 for every other family. The seed is in the
 observation on every step and changes essentially nothing.
 
@@ -373,6 +374,35 @@ more: entropy's climb was called "flat" after 6h while rising +0.136 nats/1M, an
 fitted (slope -0.005/1M against 0.036 noise). **On a rate this low, no conclusion is
 available below ~5 events per bucket and several buckets. Fit the trend, quote the noise,
 and never read a per-heartbeat point as direction.**
+
+### Seed-conditioning DID emerge — once a second behaviour existed (Sep-5)
+
+Measured with `run_model.py --family N --sample`, 20 builds each, on the ~40M checkpoint:
+
+| requested | built | hit |
+|---|---|---|
+| oval | 19 oval, 1 out_and_back | **95%** |
+| out_and_back | 17 out_and_back, 3 oval | **85%** |
+
+Fisher exact on "built out_and_back" (1/20 when oval asked vs 17/20 when out_and_back
+asked): **p < 0.00001**. On Aug-29 the same test gave 20 requested builds and 20 ovals,
+0/4 for every non-oval family, and the conclusion recorded here was that the seed "changes
+essentially nothing". That conclusion is now WRONG and superseded.
+
+**Why the nine conditioning levers looked dead.** The family gate, `R_family` bonus and
+dense family potential were paying the whole time. They could not express anything while
+the policy had exactly ONE shape in its repertoire — there was nothing to select between,
+so the seed had no lever to pull. The diversity reward (`R_novelty`) supplied a second
+reliable behaviour (out_and_back, 6-9 turns with 1-2 direction switches, reached ~44% of
+unaided builds), and conditioning appeared within hours of that behaviour becoming common.
+
+RULE: a conditioning signal cannot be learned before the behaviours it selects among
+exist. Check REPERTOIRE before concluding a conditioning mechanism is broken — the levers
+may be fine and blocked upstream.
+
+This is also why the campaign's earlier framing ("the agent knowingly forfeits ~50% of its
+payout and still builds the oval — so make the shape ACHIEVABLE, not the alternative more
+painful") was the right diagnosis: making the shape achievable is exactly what fixed it.
 
 ### The warm-start frontier is not a competence proxy (Aug-11)
 
