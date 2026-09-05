@@ -385,7 +385,11 @@ Measured with `run_model.py --family N --sample`, 20 builds each, on the ~40M ch
 | out_and_back | 17 out_and_back, 3 oval | **85%** |
 
 Fisher exact on "built out_and_back" (1/20 when oval asked vs 17/20 when out_and_back
-asked): **p < 0.00001**. On Aug-29 the same test gave 20 requested builds and 20 ovals,
+asked): **p < 0.00001**. The other three families, 15 builds each, are all 0% — and each
+returns a ~50/50 oval/out_and_back split, i.e. the agent's UNCONDITIONED base
+distribution. So the seed is not ignored in general; it is ignored specifically for shapes
+the policy cannot build. 2 of 5 families on demand, against criterion 2's "4 of 5" —
+NOT MET, but from 0 of 5 the day before. On Aug-29 the same test gave 20 requested builds and 20 ovals,
 0/4 for every non-oval family, and the conclusion recorded here was that the seed "changes
 essentially nothing". That conclusion is now WRONG and superseded.
 
